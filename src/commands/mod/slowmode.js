@@ -1,15 +1,13 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('slowmode')
-        .setDescription('Commande slowmode de la catégorie mod.'),
-    async execute(interaction, client) {
-        const embed = new EmbedBuilder()
-            .setTitle('Commande slowmode')
-            .setDescription('La commande **slowmode** a été exécutée avec succès.')
-            .setColor('Blue');
-
-        await interaction.reply({ embeds: [embed] });
-    },
+        .setDescription('Modifie le mode lent.')
+        .addIntegerOption(opt => opt.setName('secondes').setDescription('Secondes').setRequired(true))
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    async execute(interaction) {
+        const sec = interaction.options.getInteger('secondes');
+        await interaction.channel.setRateLimitPerUser(sec);
+        await interaction.reply({ content: `⏱️ Mode lent défini sur ${sec}s.` });
+    }
 };

@@ -1,15 +1,18 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ban')
-        .setDescription('Commande ban de la catégorie mod.'),
-    async execute(interaction, client) {
-        const embed = new EmbedBuilder()
-            .setTitle('Commande ban')
-            .setDescription('La commande **ban** a été exécutée avec succès.')
-            .setColor('Blue');
-
-        await interaction.reply({ embeds: [embed] });
-    },
+        .setDescription('Bannit un utilisateur.')
+        .addUserOption(opt => opt.setName('user').setDescription('Utilisateur').setRequired(true))
+        .addStringOption(opt => opt.setName('raison').setDescription('Raison').setRequired(false))
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+    async execute(interaction) {
+        const user = interaction.options.getUser('user');
+        const raison = interaction.options.getString('raison') || 'Aucune raison fournie.';
+        try {
+            await interaction.guild.members.ban(user, { reason: raison });
+            await interaction.reply({ content: `✅ **${user.tag}** a été banni.
+Raison: ${raison}` });
+        } catch { await interaction.reply({ content: 'Je ne peux pas bannir cet utilisateur.', ephemeral: true }); }
+    }
 };

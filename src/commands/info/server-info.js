@@ -1,15 +1,16 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('server-info')
-        .setDescription('Commande server-info de la catégorie info.'),
-    async execute(interaction, client) {
+    data: new SlashCommandBuilder().setName('server-info').setDescription('Infos du serveur'),
+    async execute(interaction) {
+        const guild = interaction.guild;
         const embed = new EmbedBuilder()
-            .setTitle('Commande server-info')
-            .setDescription('La commande **server-info** a été exécutée avec succès.')
-            .setColor('Blue');
-
+            .setTitle(`ℹ️ ${guild.name}`)
+            .setThumbnail(guild.iconURL())
+            .addFields(
+                { name: 'Membres', value: `${guild.memberCount}`, inline: true },
+                { name: 'Créé le', value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`, inline: true },
+                { name: 'Boosts', value: `${guild.premiumSubscriptionCount}`, inline: true }
+            );
         await interaction.reply({ embeds: [embed] });
-    },
+    }
 };

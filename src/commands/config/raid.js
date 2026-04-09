@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('../../config');
 
 module.exports = {
@@ -14,29 +14,46 @@ module.exports = {
         const { enabled, thresholds } = guildConfig.antiRaid;
 
         const embed = new EmbedBuilder()
-            .setTitle('🛡️ Dashboard Anti-Raid')
-            .setDescription('Configurez les paramètres de protection de votre serveur.')
-            .setColor(enabled ? 'Green' : 'Red')
+            .setTitle('🛡️ Dashboard Avancé Anti-Raid')
+            .setDescription('**Protégez votre serveur contre les attaques de bot et le spam.**\nUtilisez les boutons ci-dessous pour configurer les systèmes.')
+            .setColor(enabled ? '#00FF00' : '#FF0000') // Plus joli Hex
+            .setThumbnail(client.user.displayAvatarURL())
             .addFields(
-                { name: 'Statut', value: enabled ? '✅ Activé' : '❌ Désactivé', inline: true },
-                { name: 'Seuils Actuels', value: `Canaux: ${thresholds.channels}/10s\nBans: ${thresholds.bans}/10s\nKicks: ${thresholds.kicks}/10s\nSpam: ${thresholds.spam} msgs`, inline: false }
-            );
+                { name: '╭・Statut Global', value: \`╰ \${enabled ? '🟢 **Actif**' : '🔴 **Inactif**'}\`, inline: true },
+                { name: '╭・Anti-Bot', value: \`╰ \${enabled ? '🟢 **Actif** (Exclusion auto)' : '🔴 **Inactif**'}\`, inline: true },
+                { name: '\\u200B', value: '\\u200B', inline: false }, // Spacer
+                { name: '📊 Seuils de Tolérance (10s)', value: \`
+> 📝 **Canaux créés :** \${thresholds.channels} max
+> ⛔ **Bans :** \${thresholds.bans} max
+> 👢 **Kicks :** \${thresholds.kicks} max
+> 📩 **Spam :** \${thresholds.spam} msgs\`, inline: false }
+            )
+            .setFooter({ text: 'Niotic Bot - Module de Sécurité', iconURL: interaction.guild.iconURL() })
+            .setTimestamp();
 
         const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('raid_toggle')
-                .setLabel(enabled ? 'Désactiver' : 'Activer')
+                .setLabel(enabled ? '🛡️ Désactiver Anti-Raid' : '🛡️ Activer Anti-Raid')
                 .setStyle(enabled ? ButtonStyle.Danger : ButtonStyle.Success),
             new ButtonBuilder()
                 .setCustomId('raid_thresholds')
-                .setLabel('Modifier les Seuils')
+                .setLabel('⚙️ Régler les Seuils')
                 .setStyle(ButtonStyle.Primary),
             new ButtonBuilder()
                 .setCustomId('raid_whitelist')
-                .setLabel('Gérer Whitelist')
+                .setLabel('👥 Whitelist')
                 .setStyle(ButtonStyle.Secondary)
         );
 
-        await interaction.reply({ embeds: [embed], components: [row1], ephemeral: true });
+        const row2 = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('raid_antibot')
+                .setLabel('🤖 Bloquer ajout de Bots')
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(true) // Déjà géré par l'Anti-Raid global !
+        );
+
+        await interaction.reply({ embeds: [embed], components: [row1, row2], ephemeral: true });
     },
 };
