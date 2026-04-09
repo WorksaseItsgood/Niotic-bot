@@ -11,7 +11,8 @@ module.exports = {
         }
 
         const guildConfig = config.getGuildConfig(interaction.guild.id);
-        const { enabled, thresholds } = guildConfig.antiRaid;
+        const { enabled, thresholds, antiBot } = guildConfig.antiRaid;
+        const antibotEnabled = antiBot !== undefined ? antiBot : true;
 
         const embed = new EmbedBuilder()
             .setTitle('🛡️ Dashboard Avancé Anti-Raid')
@@ -20,7 +21,7 @@ module.exports = {
             .setThumbnail(client.user.displayAvatarURL())
             .addFields(
                 { name: '╭・Statut Global', value: \`╰ \${enabled ? '🟢 **Actif**' : '🔴 **Inactif**'}\`, inline: true },
-                { name: '╭・Anti-Bot', value: \`╰ \${enabled ? '🟢 **Actif** (Exclusion auto)' : '🔴 **Inactif**'}\`, inline: true },
+                { name: '╭・Anti-Bot', value: \`╰ \${antibotEnabled ? '🟢 **Actif**' : '🔴 **Inactif**'}\`, inline: true },
                 { name: '\\u200B', value: '\\u200B', inline: false }, // Spacer
                 { name: '📊 Seuils de Tolérance (10s)', value: \`
 > 📝 **Canaux créés :** \${thresholds.channels} max
@@ -49,9 +50,8 @@ module.exports = {
         const row2 = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('raid_antibot')
-                .setLabel('🤖 Bloquer ajout de Bots')
-                .setStyle(ButtonStyle.Primary)
-                .setDisabled(true) // Déjà géré par l'Anti-Raid global !
+                .setLabel(antibotEnabled ? '🤖 Désactiver Anti-Bot' : '🤖 Activer Anti-Bot')
+                .setStyle(antibotEnabled ? ButtonStyle.Danger : ButtonStyle.Success)
         );
 
         await interaction.reply({ embeds: [embed], components: [row1, row2], ephemeral: true });

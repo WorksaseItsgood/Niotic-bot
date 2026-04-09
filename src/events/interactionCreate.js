@@ -1,10 +1,10 @@
 const config = require('../config');
-const { EmbedBuilder, ChannelType, PermissionsBitField } = require('discord.js');
+const { EmbedBuilder, ChannelType, PermissionsBitField, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 
 module.exports = {
     name: 'interactionCreate',
     async execute(interaction, client) {
-        if (!interaction.isChatInputCommand() && !interaction.isButton() && !interaction.isStringSelectMenu()) return;
+        if (!interaction.isChatInputCommand() && !interaction.isButton() && !interaction.isStringSelectMenu() && !interaction.isModalSubmit()) return;
         
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
@@ -82,11 +82,30 @@ module.exports = {
                 const guildConfig = config.getGuildConfig(guildId);
                 const isEnabled = guildConfig.antiRaid.enabled;
                 config.updateAntiRaid(guildId, 'enabled', !isEnabled);
-                await interaction.reply({ content: `🛡️ Anti-Raid ${!isEnabled ? "activé" : "désactivé"}. Note: L'anti-bot est lié à ce paramètre.`, ephemeral: true });
+                await interaction.reply({ content: `🛡️ Anti-Raid ${!isEnabled ? "activé" : "désactivé"}.`, ephemeral: true });
             }
             
             else if (interaction.customId === 'raid_thresholds') {
-                await interaction.reply({ content: "L'édition des seuils via bouton sera gérée par une modale (en développement). Utilisez les commandes / pour le moment.", ephemeral: true });
+                const guildConfig = config.getGuildConfig(guildId);
+                const { channels, bans, kicks, spam } = guildConfig.antiRaid.thresholds;
+
+                const modal = new ModalBuilder()
+                    .setCustomId('modal_raid_thresholds')
+                    .setTitle('Régler les Seuils (en 10s)');
+
+                const inputChannels = new TextInputBuilder().setCustomId('th_channels').setLabel("Canaux créés").setStyle(TextInputStyle.Short).setValue(channels.toString());
+                const inputBans = new TextInputBuilder().setCustomId('th_bans').setLabel("Bannissements").setStyle(TextInputStyle.Short).setValue(bans.toString());
+                const inputKicks = new TextInputBuilder().setCustomId('th_kicks').setLabel("Expulsions").setStyle(TextInputStyle.Short).setValue(kicks.toString());
+                const inputSpam = new TextInputBuilder().setCustomId('th_spam').setLabel("Spam messages").setStyle(TextInputStyle.Short).setValue(spam.toString());
+
+                modal.addComponents(
+                    new ActionRowBuilder().addComponents(inputChannels),
+                    new ActionRowBuilder().addComponents(inputBans),
+                    new ActionRowBuilder().addComponents(inputKicks),
+                    new ActionRowBuilder().addComponents(inputSpam)
+                );
+
+                await interaction.showModal(modal);
             }
             
             else if (interaction.customId === 'raid_whitelist') {
@@ -94,7 +113,29 @@ module.exports = {
             }
 
             else if (interaction.customId === 'raid_antibot') {
-                // Not needed because already handled but user can test global anti-raid toggle
+                const guildConfig = config.getGuildConfig(guildId);
+                const current = guildConfig.antiRaid.antiBot !== undefined ? guildConfig.antiRaid.antiBot : true;
+                config.updateAntiRaid(guildId, 'antiBot', !current);
+                await interaction.reply({ content: `🤖 Anti-Bot ${!current ? "activé" : "désactivé"}.`, ephemeral: true });
+            }
+        }
+        else if (interaction.isModalSubmit()) {
+            if (interaction.customId === 'modal_raid_thresholds') {
+                const channels = parseInt(interaction.fields.getTextInputValue('th_channels'));
+                const bans = parseInt(interaction.fields.getTextInputValue('th_bans'));
+                const kicks = parseInt(interaction.fields.getTextInputValue('th_kicks'));
+                const spam = parseInt(interaction.fields.getTextInputValue('th_spam'));
+                
+                if (isNaN(channels) || isNaN(bans) || isNaN(kicks) || isNaN(spam)) {
+                    return interaction.reply({ content: "Veuillez entrer uniquement des nombres.", ephemeral: true });
+                }
+
+                const guildId = interaction.guild.id;
+                const guildConfig = config.getGuildConfig(guildId);
+                guildConfig.antiRaid.thresholds = { channels, bans, kicks, spam };
+                config._saveDB(); // Or updateAntiRaid('thresholds', { ... })
+
+                await interaction.reply({ content: "✅ Les seuils Anti-Raid ont été mis à jour.", ephemeral: true });
             }
         }
     },
